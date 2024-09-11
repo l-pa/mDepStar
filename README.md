@@ -10,7 +10,7 @@ Protein complex prediction method - Mutually Dependent Star
 - **mdepstar** mDepStar method source code
 - **mdepstar_analysis** functions to calculate F-measure and MR-score
 - **networks** giant component of each used PPI network
-- **references** unpreprocessed references (CYC, SGD24) + preprocessed references for each network, as described by the ClusterOne approach
+- **references** unprocessed references (CYC, SGD24) along with preprocessed references for each network, as described by the ClusterOne approach
 
 ## Installation
 From the project root:
