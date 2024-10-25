@@ -106,7 +106,7 @@ class Network(object):
 
     def edge_exists(self, a: str, b: str) -> bool:
 
-        if self._network.get(a, {}).get(b, None) is None:
+        if a not in self._network or b not in self._network[a]:
             return False
         else:
             return True
