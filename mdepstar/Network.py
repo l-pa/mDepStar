@@ -30,11 +30,8 @@ class Network(object):
         if weighted:
             for l in f.read().splitlines():
                 node = l.split(sep)
+                self.add_edge(node[0], node[1], float(node[2].replace(',', '.')))
 
-                if ',' in node[2]:
-                    self.add_edge(node[0], node[1], float(node[2].replace(',', '.')))
-                else:
-                    self.add_edge(node[0], node[1], float(node[2]))
         else:
             for l in f.read().splitlines():
                 node = l.split(sep)

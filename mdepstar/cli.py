@@ -22,21 +22,22 @@ parser.add_argument("-o", "--output", help="Export predicted complexes")
 parser.add_argument(
     "-m", "--mdepexport", action="store_true", help="Export mDep network"
 )
-parser.add_argument("-w", "--weighted", action="store_true", help="Weighted network", default=True)
+parser.add_argument("-w", "--weighted", action="store_true", help="Weighted network")
 parser.add_argument("-n", "--node", help="Specific protein node")
+parser.add_argument("-s", "--skip", action="store_true", help="Skip calculation of statistics")
+
 
 args = parser.parse_args()
 
-G: Network = Network()
-
-G.read_file(args.filename, args.delimiter, args.weighted)
-
-print(f"<k> {G.avg_degree}, <CC> {G.clustering_coeficient()}")
-
-print("{} nodes / {} edges".format(len(G.nodes()), len(G.edges())))
-
 
 def main():
+    G: Network = Network()
+    G.read_file(args.filename, args.delimiter, args.weighted)
+    
+    if not args.skip:
+        print(f"<k> {G.avg_degree}, <CC> {G.clustering_coeficient()}")
+        print("{} nodes / {} edges".format(len(G.nodes()), len(G.edges())))
+    
     mdep_star = mDepStar(G)
 
     if not args.dependency:

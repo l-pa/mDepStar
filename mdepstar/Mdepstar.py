@@ -1,5 +1,7 @@
 import math
 from collections import defaultdict
+
+from tqdm import tqdm
 from .Network import Network
 
 class mDepStar:
@@ -232,7 +234,7 @@ class mDepStar:
             c = set(mDep_network.neighbors(node))
             return set([frozenset([node]).union(self._check_condition(node, c))])
 
-        for n in mDep_network.nodes():
+        for n in tqdm(mDep_network.nodes()):
             c = set(mDep_network.neighbors(n))
             res = set([n]).union(self._check_condition(n, c))
             if len(res) >= 2:
