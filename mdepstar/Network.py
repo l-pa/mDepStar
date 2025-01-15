@@ -105,11 +105,9 @@ class Network(object):
                 pass
 
     def edge_exists(self, a: str, b: str) -> bool:
-
-        if self._network.get(a, {}).get(b, None) is None:
-            return False
-        else:
+        if b in self.neighbors(a):
             return True
+        return False
 
     def _remove_node(self, node: str):
         self._nodes.remove(node)
