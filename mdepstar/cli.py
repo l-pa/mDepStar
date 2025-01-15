@@ -22,7 +22,7 @@ parser.add_argument("-o", "--output", help="Export predicted complexes")
 parser.add_argument(
     "-m", "--mdepexport", action="store_true", help="Export mDep network"
 )
-parser.add_argument("-w", "--weighted", action="store_true", help="Weighted network")
+parser.add_argument("-w", "--weighted", action="store_true", help="Weighted network", default=True)
 parser.add_argument("-n", "--node", help="Specific protein node")
 
 args = parser.parse_args()

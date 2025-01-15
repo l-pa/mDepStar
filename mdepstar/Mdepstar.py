@@ -235,7 +235,7 @@ class mDepStar:
         for n in mDep_network.nodes():
             c = set(mDep_network.neighbors(n))
             res = set([n]).union(self._check_condition(n, c))
-            if len(res) >= 3:
+            if len(res) >= 2:
                 complexes.add(frozenset(res))
         return complexes
 
