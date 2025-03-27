@@ -15,6 +15,7 @@ class mDepStar:
         self._dependency_matrix: dict[str, dict[str, float]] | None = None
         self._mDep_network_dict: dict[str, dict[str, float]] | None = None
         self._dependency_threshold: float | None = None
+        self._local_neighbors_cache: dict[str, set[str]] = {}
 
         self._calc_dependency_matrix()
         if isinstance(dependency, float):
@@ -47,11 +48,16 @@ class mDepStar:
             float: dependency
         """
 
+        if (A, B) in self._dependency_cache:
+            return self._dependency_cache[(A, B)]
+
         if self._dependency_matrix is not None:
             if self._G.edge_exists(A, B):
-                return self._dependency_matrix[A][B]
+                self._dependency_cache[(A, B)] = self._dependency_matrix[A][B]
             else:
-                return self._dependency(A, B)
+                self._dependency_cache[(A, B)] = self._dependency(A, B)
+            
+            return self._dependency_cache[(A, B)]
         else:
             raise Exception("Dependency matrix is None")
 
@@ -199,23 +205,40 @@ class mDepStar:
 
         return mDep_network
     
-    def _check_condition(self, node: str, mutual_dep_neighbors: set[str]):
-        res = set()
-        for neigh in list(mutual_dep_neighbors):
-                if (
-                    mDepStar._is_greater_or_equal(
-                        self.get_dependency(neigh, node), 2 * self.dependency_threshold
-                    )
-                ) or (
-                    mDepStar._is_greater_or_equal(
-                        self.get_dependency(node, neigh), 2 * self.dependency_threshold
-                    )
-                ):
-                    res.add(neigh)
-        return res
+    def _check_first_condition(self, nodeA: str, nodeB: str, dependency_threshold: float | None = None) -> bool:
+        if dependency_threshold is None:
+            dependency_threshold = self.dependency_threshold
+        
+        if (
+            mDepStar._is_greater_or_equal(
+                self.get_dependency(nodeA, nodeB), dependency_threshold
+            )
+        ) and (
+            mDepStar._is_greater_or_equal(
+                self.get_dependency(nodeB, nodeA), dependency_threshold
+            )
+        ):
+            return True
+        return False
+    
+    def _check_second_condition(self, nodeA: str, nodeB: str, dependency_threshold: float | None = None) -> bool:
+        if dependency_threshold is None:
+            dependency_threshold = self.dependency_threshold
+
+        if (
+            mDepStar._is_greater_or_equal(
+                self.get_dependency(nodeA, nodeB), 2 * dependency_threshold
+            )
+        ) or (
+            mDepStar._is_greater_or_equal(
+                self.get_dependency(nodeB, nodeA), 2 * dependency_threshold
+            )
+        ):
+            return True
+        return False
 
 
-    def get_complexes(self, node: str | None = None) -> set[frozenset[str]]:
+    def get_complexes(self, node: list[str] | None = None) -> set[frozenset[str]]:
         """Get the complexes in the network based on dependency values and threshold value.
         Raises:
             Exception: Dependency matrix is empty
@@ -228,17 +251,200 @@ class mDepStar:
             raise Exception("Dependency matrix is empty")
 
         complexes: set[frozenset[str]] = set()
-        mDep_network = self.get_mDep_network()
+        search_space = self._G.nodes()
+        if node is not None:
+            search_space = node
 
-        if node is not None and node in mDep_network.nodes():
-            c = set(mDep_network.neighbors(node))
-            return set([frozenset([node]).union(self._check_condition(node, c))])
+        # mDep_network = self.get_mDep_network()
 
-        for n in tqdm(mDep_network.nodes()):
-            c = set(mDep_network.neighbors(n))
-            res = set([n]).union(self._check_condition(n, c))
+        for seed in tqdm(search_space):
+            res = set([seed])
+            seed_neighbors = self._G.neighbors(seed)
+
+
+            for neighbor in seed_neighbors:
+                if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
+                    res.add(neighbor)
+
             if len(res) >= 2:
                 complexes.add(frozenset(res))
+        return complexes
+    
+    def get_complexes_with_core(self, node: list[str] | None = None) -> set[tuple[str, frozenset[str]]]:
+        """Get the complexes in the network based on dependency values and threshold value, but return as list of tuples (core, complex)
+        Raises:
+            Exception: Dependency matrix is empty
+
+        Returns:
+            set[tuple[str, frozenset[str]]]: Set of predicted complexes
+        """
+
+        if self._dependency_matrix is None:
+            raise Exception("Dependency matrix is empty")
+
+        complexes: set[tuple[str, frozenset[str]]] = set()
+        # mDep_network = self.get_mDep_network()
+
+        search_space = self._G.nodes()
+        if node is not None:
+            search_space = node
+
+        for seed in tqdm(search_space):
+            res = set([seed])
+            seed_neighbors = self._G.neighbors(seed)
+
+            for neighbor in seed_neighbors:
+                if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
+                    res.add(neighbor)
+
+            if len(res) >= 2:
+                complexes.add((seed, frozenset(res)))
+        return complexes
+    def get_complexes2(self, node: str | None = None) -> set[frozenset[str]]:
+        """Get the complexes in the network based on dependency values and threshold value.
+        Raises:
+            Exception: Dependency matrix is empty
+
+        Returns:
+            set[frozenset[str]]: Set of predicted complexes
+        """
+
+        if self._dependency_matrix is None:
+            raise Exception("Dependency matrix is empty")
+
+        complexes: set[frozenset[str]] = set()
+        # mDep_network = self.get_mDep_network()
+
+        for seed in tqdm(self._G.nodes()):
+            res = set([seed])
+            seed_neighbors = self._G.neighbors(seed)
+            
+            for neighbor in seed_neighbors:
+                if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
+                    res.add(neighbor)
+                    neighbor_neighbors = self._G.neighbors(neighbor)
+                    
+                    for neighbor_neighbor in neighbor_neighbors:
+                        if neighbor_neighbor not in res and self._check_first_condition(neighbor, neighbor_neighbor) and self._check_second_condition(neighbor, neighbor_neighbor) and self._check_first_condition(seed, neighbor_neighbor) and self._check_second_condition(seed, neighbor_neighbor):
+                            res.add(neighbor_neighbor)
+
+            if len(res) >= 2:
+                complexes.add(frozenset(res))
+        return complexes
+
+    def get_complexes2_local(self, node: str | None = None) -> set[frozenset[str]]:
+        """Get the complexes in the network based on dependency values and threshold value.
+        Complex to distance 2
+        Raises:
+            Exception: Dependency matrix is empty
+
+
+        Returns:
+            set[frozenset[str]]: Set of predicted complexes
+        """
+
+        if self._dependency_matrix is None:
+            raise Exception("Dependency matrix is empty")
+
+        complexes: set[frozenset[str]] = set()
+        # mDep_network = self.get_mDep_network()
+
+        for seed in tqdm(self._G.nodes()):
+            res = set([seed])
+            seed_neighbors = self._G.neighbors(seed)
+
+            L1 = seed_neighbors.union(res)
+            L2 = self._G.neighbors_depth(L1, 0, 1)
+
+            G_induced = self._G.induced_subgraph(L2)
+            self.dependency_threshold = self._estimate_dependency(G_induced.edges())
+            
+            for neighbor in seed_neighbors:
+                if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
+                    res.add(neighbor)
+                    neighbor_neighbors = self._G.neighbors(neighbor)
+                    
+                    for neighbor_neighbor in neighbor_neighbors:
+                        if neighbor_neighbor not in res and self._check_first_condition(neighbor, neighbor_neighbor) and self._check_second_condition(neighbor, neighbor_neighbor) and self._check_first_condition(seed, neighbor_neighbor) and self._check_second_condition(seed, neighbor_neighbor):
+                            res.add(neighbor_neighbor)
+
+            if len(res) >= 2:
+                complexes.add(frozenset(res))
+        return complexes
+
+
+    def get_complexes_local(self, node: str | None = None) -> set[frozenset[str]]:
+        """Get the complexes in the network based on dependency values and threshold value.
+        Raises:
+            Exception: Dependency matrix is empty
+
+        Returns:
+            set[frozenset[str]]: Set of predicted complexes
+        """
+
+        if self._dependency_matrix is None:
+            raise Exception("Dependency matrix is empty")
+
+        complexes: set[frozenset[str]] = set()
+        # mDep_network = self.get_mDep_network()
+
+        for seed in tqdm(self._G.nodes()):
+            res = set([seed])
+            seed_neighbors = self._G.neighbors(seed)
+
+            L1 = seed_neighbors.union(res)
+            L2 = self._G.neighbors_depth(L1, 0, 1)
+
+            G_induced = self._G.induced_subgraph(L2)
+            self.dependency_threshold = self._estimate_dependency(G_induced.edges())
+            
+            for neighbor in seed_neighbors:
+                if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
+                    res.add(neighbor)
+
+            if len(res) >= 2:
+                complexes.add(frozenset(res))
+        return complexes
+
+
+    def get_complexes_local_with_core(self, node: list[str] | None = None) -> set[tuple[str, frozenset[str]]]:
+        """Get the complexes in the network based on dependency values and threshold value, but return as list of tuples (core, complex)
+        Raises:
+            Exception: Dependency matrix is empty
+
+        Returns:
+            set[tuple[str, frozenset[str]]]: Set of predicted complexes
+        """
+
+        if self._dependency_matrix is None:
+            raise Exception("Dependency matrix is empty")
+
+        complexes: set[tuple[str, frozenset[str]]] = set()
+        # mDep_network = self.get_mDep_network()
+
+        search_space = self._G.nodes()
+        if node is not None:
+            search_space = node
+
+        print(search_space)
+        
+        for seed in tqdm(search_space):
+            res = set([seed])
+            seed_neighbors = self._G.neighbors(seed)
+
+
+            L1 = seed_neighbors.union(res)
+            L2 = self._G.neighbors_depth(L1, 0, 1)
+
+            G_induced = self._G.induced_subgraph(L2)
+            self.dependency_threshold = self._estimate_dependency(G_induced.edges())
+            
+            for neighbor in seed_neighbors:
+                if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
+                    res.add(neighbor)
+
+            if len(res) >= 2:
+                complexes.add((seed, frozenset(res)))
         return complexes
 
     def _get_mDep_network_edges(self, edges: list[tuple[str, str]]):

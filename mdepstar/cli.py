@@ -31,6 +31,7 @@ args = parser.parse_args()
 
 
 def main():
+    print("v2")
     G: Network = Network()
     G.read_file(args.filename, args.delimiter, args.weighted)
     
@@ -46,6 +47,10 @@ def main():
         mdep_star.dependency_threshold = float(args.dependency)
 
     res = mdep_star.get_complexes(args.node)
+    # res1 = mdep_star.get_complexes2(args.node)
+    # res2 = mdep_star.get_complexes_local(args.node)
+    # res3 = mdep_star.get_complexes2_local(args.node)
+
 
     if args.mdepexport:
         mdep_star.export_mDep_network(
@@ -59,6 +64,10 @@ def main():
             )
         )
         mdep_star.export(res, args.output + "_clusters.txt")
+        # mdep_star.export(res1, args.output + "2_clusters.txt")
+        # mdep_star.export(res2, args.output + "-local_clusters.txt")
+        # mdep_star.export(res3, args.output + "2-local_clusters.txt")
+
     else:
         print("Found {} complexes, no output (use -o)".format(len(res)))
 

@@ -1,5 +1,6 @@
 from collections import defaultdict
 import networkx as nx
+from collections import deque
 
 class Network(object):
 
@@ -11,7 +12,7 @@ class Network(object):
                             ] = defaultdict(lambda: defaultdict(float))
 
         self._weighted = False
-        self._neighbors = defaultdict(list)
+        self._neighbors = defaultdict(set)
         self._file_name: str = None
 
     def __str__(self) -> str:
@@ -69,13 +70,14 @@ class Network(object):
         return n / len(self.nodes())
     
     def add_edge(self, a: str, b: str, weight: float):
-        if not self.edge_exists(a, b) and not self.edge_exists(b, a):
+        if not self.edge_exists(a, b) and not self.edge_exists(b, a) and a != b:
+
 
             self._network[a][b] = weight
             self._network[b][a] = weight
 
-            self._neighbors[a].append(b)
-            self._neighbors[b].append(a)
+            self._neighbors[a].add(b)
+            self._neighbors[b].add(a)
 
             self._edges.append((a, b))
             self.add_node(a)
@@ -135,8 +137,8 @@ class Network(object):
     def get_edge_weight(self, a: str, b: str) -> float:
         return self._network[a][b]
 
-    def neighbors(self, node: str) -> frozenset[str]:
-        return frozenset(self._neighbors[node])
+    def neighbors(self, node: str) -> set[str]:
+        return self._neighbors[node]
 
     def common_neighbors(self, x: str, y: str) -> frozenset[str]:
         return self.neighbors(x).intersection(self.neighbors(y))
@@ -153,35 +155,30 @@ class Network(object):
     def file_name(self) -> str:
         return self._file_name
 
-    def induced_subgraph(self, nodes: list[str] | set[str]):
-
-        if type(nodes) is set or isinstance(nodes, frozenset):
-            nodes = list(nodes)
+    def induced_subgraph(self, nodes: set[str]):
 
         a = Network()
 
-        for i in range(len(nodes)):
-            for j in range(i+1, len(nodes)):
-                node_a = nodes[i]
-                node_b = nodes[j]
-
-                if self.edge_exists(node_a, node_b):
-                    a.add_edge(node_a, node_b, self.get_edge_weight(node_a, node_b))
+        for node in nodes:
+            if node not in self._neighbors:
+                continue  # Skip if the node has no edges
+            
+            for neighbor in self._neighbors[node]:
+                if neighbor in nodes:
+                    a.add_edge(node, neighbor, self.get_edge_weight(node, neighbor))
 
         return a
 
     def neighbors_depth(self, result_nodes: set[str], current_depth: int, max_depth: int) -> set[str]:
-
         res = set(result_nodes)
-
-        if current_depth == max_depth:
-            return result_nodes
-        else:
-            for i in result_nodes:
-                for j in self.neighbors(i):
-                    res.add(j)
-
-            return self.neighbors_depth(res, current_depth + 1, max_depth)
+        temp_neighbors = set()
+        
+        for node in result_nodes:
+            neighbors = self.neighbors(node) 
+            temp_neighbors.update(neighbors)
+        
+        res.update(temp_neighbors)
+        return res
         
     def to_networkx(self) -> nx.Graph:
         
