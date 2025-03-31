@@ -315,8 +315,11 @@ class mDepStar:
 
         complexes: set[frozenset[str]] = set()
         # mDep_network = self.get_mDep_network()
+        search_space = self._G.nodes()
+        if node is not None:
+            search_space = [node]
 
-        for seed in tqdm(self._G.nodes()):
+        for seed in tqdm(search_space):
             res = set([seed])
             seed_neighbors = self._G.neighbors(seed)
 

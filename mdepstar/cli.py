@@ -25,7 +25,7 @@ parser.add_argument(
 parser.add_argument("-w", "--weighted", action="store_true", help="Weighted network")
 parser.add_argument("-n", "--node", help="Specific protein node")
 parser.add_argument("-s", "--skip", action="store_true", help="Skip calculation of statistics")
-parser.add_argument("-l", "--local", action="store_true", help="")
+parser.add_argument("-l", "--local", action="store_true", help="Local version")
 
 
 
@@ -50,9 +50,6 @@ def main():
             mdep_star.dependency_threshold = float(args.dependency)
 
         res = mdep_star.get_complexes(args.node)
-    # res1 = mdep_star.get_complexes2(args.node)
-    # res2 = mdep_star.get_complexes_local(args.node)
-    # res3 = mdep_star.get_complexes2_local(args.node)
     else:
         res = mdep_star.get_complexes_local(args.node)
 
@@ -68,9 +65,6 @@ def main():
             )
         )
         mdep_star.export(res, args.output + "_clusters.txt")
-        # mdep_star.export(res1, args.output + "2_clusters.txt")
-        # mdep_star.export(res2, args.output + "-local_clusters.txt")
-        # mdep_star.export(res3, args.output + "2-local_clusters.txt")
 
     else:
         print("Found {} complexes, no output (use -o)".format(len(res)))
