@@ -1,3 +1,4 @@
 mDepStar.egg-info
 build
 mdepstar/__pycache__
+*.pyc

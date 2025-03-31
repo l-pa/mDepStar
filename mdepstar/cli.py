@@ -25,6 +25,8 @@ parser.add_argument(
 parser.add_argument("-w", "--weighted", action="store_true", help="Weighted network")
 parser.add_argument("-n", "--node", help="Specific protein node")
 parser.add_argument("-s", "--skip", action="store_true", help="Skip calculation of statistics")
+parser.add_argument("-l", "--local", action="store_true", help="")
+
 
 
 args = parser.parse_args()
@@ -40,17 +42,19 @@ def main():
         print("{} nodes / {} edges".format(len(G.nodes()), len(G.edges())))
     
     mdep_star = mDepStar(G)
+    res = None
+    if not args.local:
+        if not args.dependency:
+            print(f"Estimated dependency -> {mdep_star.dependency_threshold}")
+        else:
+            mdep_star.dependency_threshold = float(args.dependency)
 
-    if not args.dependency:
-        print(f"Estimated dependency -> {mdep_star.dependency_threshold}")
-    else:
-        mdep_star.dependency_threshold = float(args.dependency)
-
-    res = mdep_star.get_complexes(args.node)
+        res = mdep_star.get_complexes(args.node)
     # res1 = mdep_star.get_complexes2(args.node)
     # res2 = mdep_star.get_complexes_local(args.node)
     # res3 = mdep_star.get_complexes2_local(args.node)
-
+    else:
+        res = mdep_star.get_complexes_local(args.node)
 
     if args.mdepexport:
         mdep_star.export_mDep_network(

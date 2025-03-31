@@ -23,6 +23,12 @@ To predict complexes on a weighted (-w) PPI network and output the results to a 
 ```
 mdepstar networks/ppi-network -o predictions -w
 ```
+
+for local version add parameter --local
+```
+mdepstar networks/ppi-network -l -o predictions -w
+```
+
 For more information, such as setting a custom dependency threshold or predicting a complex for only one selected protein, use:
 ```
 mdepstar -h
