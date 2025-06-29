@@ -270,7 +270,7 @@ class mDepStar:
                 complexes.add(frozenset(res))
         return complexes
     
-    def get_complexes_with_core(self, node: list[str] | None = None) -> set[tuple[str, frozenset[str]]]:
+    def get_complexes_with_core(self, node: list[str] | None = None, reset_dependency_threshold: bool = False) -> set[tuple[str, frozenset[str]]]:
         """Get the complexes in the network based on dependency values and threshold value, but return as list of tuples (core, complex)
         Raises:
             Exception: Dependency matrix is empty
@@ -282,11 +282,15 @@ class mDepStar:
         if self._dependency_matrix is None:
             raise Exception("Dependency matrix is empty")
 
+        if reset_dependency_threshold:
+            self.dependency_threshold = self._estimate_dependency(self._G.edges())
+
         complexes: set[tuple[str, frozenset[str]]] = set()
         # mDep_network = self.get_mDep_network()
 
         search_space = self._G.nodes()
         if node is not None:
+            
             search_space = node
 
         for seed in tqdm(search_space):
@@ -297,7 +301,7 @@ class mDepStar:
                 if self._check_first_condition(seed, neighbor) and self._check_second_condition(seed, neighbor):
                     res.add(neighbor)
 
-            if len(res) >= 2:
+            if len(res) >= 3:
                 complexes.add((seed, frozenset(res)))
         return complexes
 
@@ -355,14 +359,16 @@ class mDepStar:
 
         search_space = self._G.nodes()
         if node is not None:
-            search_space = node
+            if isinstance(node, str):
+                search_space = [node]
+            else:
+                search_space = node
 
         print(search_space)
         
         for seed in tqdm(search_space):
             res = set([seed])
             seed_neighbors = self._G.neighbors(seed)
-
 
             L1 = seed_neighbors.union(res)
             L2 = self._G.neighbors_depth(L1, 0, 1)

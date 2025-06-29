@@ -170,15 +170,27 @@ class Network(object):
         return a
 
     def neighbors_depth(self, result_nodes: set[str], current_depth: int, max_depth: int) -> set[str]:
-        res = set(result_nodes)
-        temp_neighbors = set()
+        if current_depth >= max_depth:
+            return result_nodes
         
+        all_nodes = set(result_nodes)  # Start with current nodes
+        next_level = set()
+        
+        # Get all neighbors of current result nodes
         for node in result_nodes:
-            neighbors = self.neighbors(node) 
-            temp_neighbors.update(neighbors)
+            neighbors = self.neighbors(node)
+            next_level.update(neighbors)
         
-        res.update(temp_neighbors)
-        return res
+        # Find new nodes not already in our result set
+        new_nodes = next_level - all_nodes
+        
+        if new_nodes:  # If we found new nodes
+            all_nodes.update(new_nodes)  # Add them to our result
+            # Recursively explore the new nodes at next depth level
+            deeper_nodes = self.neighbors_depth(new_nodes, current_depth + 1, max_depth)
+            all_nodes.update(deeper_nodes)
+        
+        return all_nodes
         
     def to_networkx(self) -> nx.Graph:
         
